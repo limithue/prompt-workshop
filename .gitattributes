@@ -1,0 +1,12 @@
+# 统一换行与文本处理
+* text=auto eol=lf
+
+# 二进制文件，不做换行转换
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
