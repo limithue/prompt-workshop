@@ -16,6 +16,8 @@ prompt-workshop/
 │   ├── 提示词工坊开题报告.docx   # 开题报告正式稿
 │   ├── 开题报告-正文.md          # 开题报告正文源稿（便于修改后重新排版）
 │   └── README.md               # 文档说明
+├── server.py                   # 可选：本地代理服务（托管页面、保管密钥）
+├── prompt_lab.py               # 可选：命令行版（生成提示词、量化对比、导出报告）
 ├── .gitignore
 └── README.md
 ```
@@ -42,6 +44,44 @@ prompt-workshop/
 
 若使用真实 API 模式：点击右上角「设置」→ 选择服务商或填自定义接口地址 → 填入 API Key 与模型名 → 保存后切到「真实 API」标签。
 
+## 可选：Python 辅助工具
+
+网页版本身不需要 Python。下面两个脚本是补充能力，只用标准库，无需 pip 安装。
+
+### `server.py` —— 密钥留在后端
+
+直连模式下密钥存在浏览器 `localStorage`，同一台电脑上打开开发者工具就能读到。用本地服务可以把这个口子堵上：
+
+```bash
+# Windows PowerShell
+$env:PW_API_KEY="sk-xxxx"
+python server.py
+```
+
+启动后访问 `http://127.0.0.1:8000`，设置里 Base URL 填 `http://127.0.0.1:8000/v1`，API Key 随便填（如 `local`）。服务端把 `/v1/chat/completions` 原样转发给上游，密钥只存在于进程环境变量，不再下发到前端。默认只监听 `127.0.0.1`。
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `PW_API_KEY` | 空 | 上游真实密钥，必需 |
+| `PW_UPSTREAM` | `https://api.deepseek.com/v1` | 上游 Base URL |
+| `PW_MODEL` | `deepseek-chat` | 默认模型名 |
+| `PW_HOST` / `PW_PORT` | `127.0.0.1` / `8000` | 监听地址与端口 |
+
+健康检查 `GET /healthz` 返回上游地址、默认模型与密钥是否已配置，可用来验证服务是否正常。
+
+### `prompt_lab.py` —— 把对比做成可量化的报告
+
+```bash
+# 只看六要素提示词，不消耗 token
+python prompt_lab.py "帮我写一个统计步数并生成周报的功能" --scene coding --dry
+
+# 真实对比，导出 Markdown 报告
+python prompt_lab.py "帮我写一个统计步数并生成周报的功能" --scene coding --out report.md
+```
+
+`--scene` 与网页端五个场景一一对应。报告除两份回答外，附一张指标表（字符数、行数、编号或分点行数、含代码块、含小标题），把「优化后更好」从主观感受变成可核对的数字。
+
+
 ## 对应知识点
 
 | 知识点 | 在项目中的体现 |
@@ -50,11 +90,13 @@ prompt-workshop/
 | 角色设定 Role Prompting | 场景选择决定「你是一位资深 XX」的身份描述 |
 | 少样本示例 Few-shot | 「参考示例」要素内置输入→输出样例 |
 | 输出格式约束 | 「输出格式」要素指定结构、条数、字段 |
-| 评估与迭代 | 原始 vs 优化并排对比，差异即评估依据 |
+| 评估与迭代 | 原始 vs 优化并排对比；`prompt_lab.py` 进一步给出指标表 |
 
 ## 技术栈
 
 原生 HTML + CSS + JavaScript，零依赖、零构建，纯静态页面。使用 CSS 变量管理主题色，`fetch` 调用 OpenAI 兼容接口，`localStorage` 持久化配置。
+
+可选的 Python 辅助工具基于 Python 3.8+ 标准库（`http.server`、`urllib`、`argparse`），不引入第三方依赖。
 
 ## 许可
 

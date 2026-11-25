@@ -23,3 +23,12 @@ _last_rid
 ~$*.docx
 ~$*.xlsx
 ~$*.pptx
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 本地配置与生成的报告
+.env
+report.md
