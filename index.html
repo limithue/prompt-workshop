@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>提示词工坊 · 结构化提示词优化与效果对比</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1f2430; --muted:#6b7280; --line:#e4e8f0;
+    --brand:#4f46e5; --brand-soft:#eef0ff; --good:#0f9d6e; --good-soft:#e9f8f1;
+    --raw:#b45309; --raw-soft:#fff5e6; --shadow:0 2px 12px rgba(30,41,70,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+    font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--brand)}
+  .wrap{max-width:1400px;margin:0 auto;padding:0 22px 60px}
+  header{background:#fff;border-bottom:1px solid var(--line)}
+  .head-in{max-width:1400px;margin:0 auto;padding:18px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .logo{width:38px;height:38px;border-radius:11px;background:var(--brand);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:19px;flex-shrink:0}
+  .head-txt{flex:1;min-width:220px}
+  .head-txt h1{margin:0;font-size:18px;font-weight:600;letter-spacing:.2px}
+  .head-txt p{margin:2px 0 0;color:var(--muted);font-size:12px}
+  .mode-switch{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+  .mode-switch button{border:0;background:transparent;color:var(--muted);padding:7px 14px;border-radius:8px;
+    font-size:13px;cursor:pointer;font-family:inherit;transition:.15s}
+  .mode-switch button.on{background:#fff;color:var(--brand);box-shadow:var(--shadow);font-weight:500}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:9px 16px;border-radius:9px;
+    font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{border-color:#c9cfe0;transform:translateY(-1px)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:500}
+  .btn.primary:hover{background:#4338ca}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+  .status{margin:18px 0 0;padding:10px 14px;border-radius:9px;font-size:12.5px;
+    background:var(--brand-soft);color:#3b32b3;border:1px solid #dcd9ff}
+  .status.api{background:#eef7ff;color:#0b5fa5;border-color:#cfe6fa}
+  .status.warn{background:var(--raw-soft);color:#92400e;border-color:#f6ddb0}
+
+  .grid{display:grid;grid-template-columns:1.05fr 1.25fr;gap:18px;margin-top:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+    padding:20px 22px}
+  .card h2{margin:0 0 4px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:9px}
+  .step{width:23px;height:23px;border-radius:7px;background:var(--brand-soft);color:var(--brand);
+    font-size:12px;display:inline-flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 16px}
+
+  .field-label{font-size:12.5px;font-weight:500;color:#374151;margin:14px 0 7px;display:block}
+  textarea,input,select{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 12px;
+    font-size:13px;font-family:inherit;color:var(--ink);background:#fff;outline:none;transition:.15s;resize:vertical}
+  textarea:focus,input:focus,select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+  #need{min-height:104px;line-height:1.7}
+  .scenes{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:#fff;color:#374151;padding:7px 13px;border-radius:999px;
+    font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s}
+  .chip:hover{border-color:#c9cfe0}
+  .chip.on{background:var(--brand-soft);border-color:#c9c4ff;color:var(--brand);font-weight:500}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+  .hint{font-size:12px;color:var(--muted)}
+  .example-link{background:none;border:0;color:var(--brand);cursor:pointer;font-size:12.5px;padding:0;font-family:inherit;text-decoration:underline;text-underline-offset:2px}
+
+  .elt{display:grid;grid-template-columns:1fr;gap:11px}
+  .elt-item{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .elt-head{background:#fafbfe;padding:7px 12px;font-size:12px;font-weight:500;color:#374151;
+    display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+  .elt-head .dot{width:7px;height:7px;border-radius:50%;background:var(--brand);flex-shrink:0}
+  .elt-item textarea{border:0;border-radius:0;min-height:56px;font-size:12.5px;line-height:1.6;resize:vertical}
+  .elt-item textarea:focus{box-shadow:none}
+
+  .assemble{margin-top:14px}
+  .assemble .elt-head{background:var(--brand-soft);color:var(--brand)}
+  .assemble textarea{min-height:120px;background:#fbfbff;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+
+  .compare{margin-top:18px}
+  .cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .ans{border:1px solid var(--line);border-radius:11px;overflow:hidden;display:flex;flex-direction:column}
+  .ans-head{padding:9px 14px;font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:8px}
+  .ans.raw .ans-head{background:var(--raw-soft);color:var(--raw);border-bottom:1px solid #f6ddb0}
+  .ans.good .ans-head{background:var(--good-soft);color:var(--good);border-bottom:1px solid #bfe8d7}
+  .tag{font-size:10.5px;padding:1px 7px;border-radius:999px;background:rgba(255,255,255,.7);font-weight:400}
+  .ans-body{padding:15px 16px;min-height:190px;font-size:13px;line-height:1.75;white-space:pre-wrap;
+    color:#374151;flex:1;background:#fff}
+  .ans.good .ans-body{background:#fcfffd}
+  .empty{color:#9aa2b1;font-size:12.5px;display:flex;align-items:center;justify-content:center;height:100%}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid #d7dbe6;border-top-color:var(--brand);
+    border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:#1f2430;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;opacity:0;
+    pointer-events:none;transition:.25s;z-index:50}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(20,24,40,.42);display:none;align-items:center;
+    justify-content:center;padding:20px;z-index:40}
+  .modal-bg.show{display:flex}
+  .modal{background:#fff;border-radius:15px;width:min(480px,100%);padding:24px 26px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .modal h3{margin:0 0 4px;font-size:16px}
+  .modal .desc{color:var(--muted);font-size:12.5px;margin:0 0 18px}
+  .modal .row-end{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
+
+  details.help{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:0 20px}
+  details.help summary{cursor:pointer;padding:14px 0;font-weight:500;font-size:13.5px;list-style:none}
+  details.help summary::-webkit-details-marker{display:none}
+  details.help summary::before{content:"+";display:inline-block;width:18px;color:var(--brand);font-weight:600}
+  details.help[open] summary::before{content:"−"}
+  details.help .help-body{padding:0 0 16px 18px;font-size:12.5px;color:#4b5563}
+  details.help .help-body p{margin:6px 0}
+  details.help code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
+
+  footer{text-align:center;color:#9aa2b1;font-size:11.5px;margin-top:34px}
+
+  @media(max-width:960px){.grid{grid-template-columns:1fr}.cmp-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="head-in">
+    <div class="logo">提</div>
+    <div class="head-txt">
+      <h1>提示词工坊</h1>
+      <p>结构化提示词优化 · 原始 vs 优化效果对比 · 大模型提示词工程课程作业</p>
+    </div>
+    <div class="mode-switch" role="tablist" aria-label="运行模式">
+      <button id="tabDemo" class="on" role="tab" aria-selected="true">演示模式</button>
+      <button id="tabApi" role="tab" aria-selected="false">真实 API</button>
+    </div>
+    <button class="btn" id="btnSetting" title="API 设置">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21h-4v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3v-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1H21v4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+      设置
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="status" id="status">当前为<b>演示模式</b>：使用内置规则引擎生成结构化提示词并模拟两种回答，无需 API Key 即可完整演示。切换到「真实 API」可调用大模型。</div>
+
+  <div class="grid">
+    <section class="card">
+      <h2><span class="step">1</span>写下你的需求</h2>
+      <p class="sub">用一句大白话描述就行，越具体越好。系统会自动把它改造成结构化提示词。</p>
+
+      <label class="field-label" for="need">需求描述</label>
+      <textarea id="need" placeholder="例如：帮我写一个能统计每天步数、并生成每周运动周报的功能，要能给朋友看。"></textarea>
+
+      <label class="field-label">任务场景（决定提示词的专业身份与风格）</label>
+      <div class="scenes" id="scenes"></div>
+
+      <div class="row">
+        <button class="btn primary" id="btnBuild">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 3 14 9-14 9V3Z"/></svg>
+          生成结构化提示词
+        </button>
+        <button class="example-link" id="btnExample">填入示例需求</button>
+      </div>
+      <p class="hint" style="margin-top:12px">小技巧：先点「填入示例需求」体验完整流程，再换成你自己的需求。</p>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">2</span>六要素结构化提示词</h2>
+      <p class="sub">下面每一项都可以直接修改。改完后底部的完整提示词会实时同步。</p>
+      <div class="elt" id="eltList"></div>
+      <div class="assemble">
+        <div class="elt-head"><span class="dot"></span>完整提示词（可直接复制使用）</div>
+        <textarea id="assembled" readonly></textarea>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="btnCopy">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            复制提示词
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card compare">
+    <h2><span class="step">3</span>效果对比：同一需求，两种问法</h2>
+    <p class="sub">左边直接用你的大白话；右边用上面生成的六要素提示词。点击按钮让模型分别回答，差异一目了然。</p>
+    <div class="row" style="margin-top:0">
+      <button class="btn primary" id="btnCompare">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 5 3 12l5 7M16 5l5 7-5 7"/></svg>
+        开始对比
+      </button>
+      <span class="hint" id="compareHint">先生成提示词，再点击对比</span>
+    </div>
+    <div class="cmp-grid" style="margin-top:16px">
+      <div class="ans raw">
+        <div class="ans-head">原始提示词（大白话）<span class="tag">用户直接提问</span></div>
+        <div class="ans-body" id="rawAns"><div class="empty">等待生成…</div></div>
+      </div>
+      <div class="ans good">
+        <div class="ans-head">优化后提示词（六要素）<span class="tag">结构化输入</span></div>
+        <div class="ans-body" id="goodAns"><div class="empty">等待生成…</div></div>
+      </div>
+    </div>
+  </section>
+
+  <details class="help">
+    <summary>这个作业用到了哪些提示词工程知识？</summary>
+    <div class="help-body">
+      <p><b>1. 六要素结构</b>：角色 / 任务 / 背景 / 输出格式 / 示例 / 约束，对应课堂讲的提示词构成。</p>
+      <p><b>2. 角色设定</b>：为不同场景指定专家身份，让模型进入专业语境。</p>
+      <p><b>3. 少样本示例（Few-shot）</b>：在提示词里给出参考输出，引导风格与结构。</p>
+      <p><b>4. 输出格式约束</b>：明确要求分点、标题、代码块等，结果更可用。</p>
+      <p><b>5. 对比验证</b>：同一需求两种问法并排对比，直观证明提示词工程的价值——这正是"评估与迭代"环节。</p>
+      <p><b>运行说明</b>：演示模式完全离线，双击 <code>index.html</code> 即可打开；真实 API 模式需在右上角「设置」中填写 OpenAI 兼容接口地址、密钥与模型名，密钥仅保存在本机浏览器，不会写入代码。</p>
+    </div>
+  </details>
+
+  <footer>提示词工坊 · 结构化提示词优化与效果对比 · 课程作业演示</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="API 设置">
+    <h3>真实 API 设置</h3>
+    <p class="desc">兼容 OpenAI Chat Completions 接口。密钥只保存在本机浏览器（localStorage），不会写进代码或上传。</p>
+    <label class="field-label" for="cfgProvider">服务商预设</label>
+    <select id="cfgProvider">
+      <option value="deepseek">DeepSeek</option>
+      <option value="qwen">通义千问（DashScope 兼容模式）</option>
+      <option value="kimi">Moonshot Kimi</option>
+      <option value="openai">OpenAI</option>
+      <option value="custom">自定义</option>
+    </select>
+    <label class="field-label" for="cfgBase">接口地址 Base URL</label>
+    <input id="cfgBase" placeholder="https://api.deepseek.com/v1">
+    <label class="field-label" for="cfgKey">API Key</label>
+    <input id="cfgKey" type="password" placeholder="sk-...">
+    <label class="field-label" for="cfgModel">模型名</label>
+    <input id="cfgModel" placeholder="deepseek-chat">
+    <div class="row-end">
+      <button class="btn" id="btnCancelCfg">取消</button>
+      <button class="btn primary" id="btnSaveCfg">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCENES = {
+  general:{
+    label:"通用任务",
+    role:"你是一位细致、专业的通用助手，善于把复杂需求拆解成清晰可执行的步骤，回答可靠且务实。",
+    context:"用户希望得到可直接落地的帮助，而不是泛泛而谈。请结合常识与专业知识，给出有判断力的建议。",
+    format:"请先给出一句话结论，再用编号分点说明关键内容，最后给出可操作的下一步建议。",
+    example:"输入：帮我整理一下周末计划\n输出：一句话结论 → 1. 上午安排 → 2. 下午安排 → 3. 晚上安排 → 下一步建议",
+    constraints:"不要编造不确定的事实；信息不足时主动说明并给出假设；语言简洁，避免空话套话。",
+    raw:need=>"关于「"+need+"」，这个嘛，我觉得你可以多想想，上网查查资料，然后自己总结一下。其实这类问题挺常见的，你先试着做做看，遇到具体问题解决不了的话再来问我。希望能帮到你。",
+    good:need=>"一句话结论：把「"+need+"」拆成目标、步骤和验证三部分，就能稳步推进。\n\n1. 明确目标：先定义清楚最终要交付什么，避免方向跑偏。\n2. 拆解步骤：把「"+need+"」拆成可以单独完成的小任务，排出先后顺序。\n3. 分配资源：估算每一步需要的时间和资料，找出关键依赖。\n4. 验证结果：对照目标逐项检查，发现问题及时回退修正。\n\n下一步建议：先写出第一版草稿，再按上面的清单逐条完善，不要追求一次到位。"
+  },
+  coding:{
+    label:"编程开发",
+    role:"你是一位资深软件工程师，代码风格规范，注重可读性、健壮性与可维护性。",
+    context:"用户需要一个能跑通的技术方案，可能用于课程项目。技术选型应优先考虑成熟稳定、上手快的方案。",
+    format:"请按以下结构输出：1) 需求拆解；2) 技术思路；3) 关键代码（用代码块）；4) 边界情况与测试建议。",
+    example:"输入：写一个判断闰年的函数\n输出：需求拆解 → 思路（整除规则） → 代码（isLeapYear） → 测试（1900/2000/2024）",
+    constraints:"代码需附必要注释；说明运行环境与依赖；不要使用已废弃的 API；不确定时明确说明假设。",
+    raw:need=>"这个需求直接写代码就好了。你用 Python 或者 Java 都行，网上例子很多的，复制过来改一改就能跑。写完记得测试一下，有问题再调试。大概就是这样。",
+    good:need=>"1. 需求拆解\n目标是实现「"+need+"」。核心包括：输入处理、主逻辑、结果输出三部分。\n\n2. 技术思路\n采用分层写法，主逻辑与界面分离，便于单独测试和后续扩展。优先使用标准库，减少外部依赖。\n\n3. 关键代码\n```python\ndef main(task):\n    # 参数校验\n    if not task:\n        raise ValueError(\"输入不能为空\")\n    # 核心处理\n    result = handle(task)\n    return result\n```\n\n4. 边界情况与测试建议\n- 空输入、异常格式要有兜底；\n- 正常值、边界值各测一组；\n- 建议写成单元函数，方便复用与自动测试。"
+  },
+  writing:{
+    label:"文案写作",
+    role:"你是一位资深品牌文案策划，擅长抓住受众心理，写出有温度、有传播力的文字。",
+    context:"用户需要可直接发布的文案，重视标题吸引力、情绪共鸣与行动号召。",
+    format:"请输出：3 个备选标题 + 正文（分短段）+ 一句行动号召，并说明每个标题适合的场景。",
+    example:"输入：为校园跑步活动写宣传文案\n输出：标题A/B/C → 正文 → 行动号召 → 标题适用场景说明",
+    constraints:"避免空泛口号和过度夸张；语气与目标受众匹配；控制篇幅，段落简短。",
+    raw:need=>"帮你写一段关于"+need+"的文案。写得吸引人一点，有点意思就行，字数大概几百字吧。你自己看看哪里不满意再改改，可能需要多改几版。",
+    good:need=>"【备选标题】\nA.《关于"+need+"，我想说的三件事》——适合正式推送\nB.《原来"+need+"可以这么简单》——适合社交平台\nC.《别再错过"+need+"了》——适合限时活动\n\n【正文】\n你有没有发现，很多事情难的不是开始，而是找不到一个值得开始的理由。\n\n"+need+"，就是这样一个理由。它不需要你做足准备，只要迈出第一步，后面的事会自然发生。\n\n我们把复杂的部分留给自己，把简单的体验交给你。\n\n【行动号召】\n现在就来试试，让改变从今天开始。\n\n【标题适用场景】A 强调内容价值，B 降低心理门槛，C 制造紧迫感。"
+  },
+  analysis:{
+    label:"数据分析",
+    role:"你是一位严谨的数据分析师，重视口径清晰、结论有据，善于把数据转化为可执行洞察。",
+    context:"用户希望从数据中得到可靠结论，而非罗列数字。需要说明分析维度、方法与局限。",
+    format:"请按结构输出：1) 分析目标；2) 数据维度与指标；3) 分析方法；4) 结论要点；5) 风险与局限。",
+    example:"输入：分析本周步数变化\n输出：目标 → 维度（日期/时段） → 方法（环比） → 结论 → 数据局限",
+    constraints:"明确数据口径与时间范围；不要过度解读相关关系为因果；指出样本局限。",
+    raw:need=>"关于"+need+"这个分析，你可以先用 Excel 做做图表，看看趋势怎么样，然后写个报告。数据要注意准确，图表做得好看点，最后总结一下就行了。",
+    good:need=>"1. 分析目标\n回答「"+need+"」的核心问题，并给出可执行的判断。\n\n2. 数据维度与指标\n- 时间维度：按日 / 周聚合，观察趋势；\n- 核心指标：总量、均值、环比变化；\n- 分组维度：按场景或人群拆分对比。\n\n3. 分析方法\n先做描述性统计看整体分布，再做趋势对比找异常点，最后对异常点做下钻分析。\n\n4. 结论要点\n- 整体走势平稳，个别时间点存在明显波动；\n- 波动与特定事件时间吻合，值得进一步验证；\n- 建议优先关注贡献最大的前 20% 样本。\n\n5. 风险与局限\n样本量有限，短期波动可能受偶然因素影响；相关关系不等于因果，结论需结合业务背景判断。"
+  },
+  study:{
+    label:"学习辅导",
+    role:"你是一位耐心的学科老师，善于用通俗类比解释抽象概念，循序渐进引导学习者理解。",
+    context:"用户是在学习的学生，需要从零讲清楚，避免堆砌术语，最好配例子和自测题。",
+    format:"请输出：1) 一句话理解；2) 生活化类比；3) 三个关键点；4) 一个小例子；5) 两道自测题（附答案）。",
+    example:"输入：解释什么是递归\n输出：一句话理解 → 照镜子类比 → 关键点 → 阶乘例子 → 自测题",
+    constraints:"先解释术语再使用；一次只讲一个概念；语气鼓励，不打击学习者；例子需贴近生活。",
+    raw:need=>"这个概念你多读几遍课本，做几道题就明白了。不懂的地方可以问问老师或者同学。学习嘛，贵在坚持，慢慢来总会懂的。",
+    good:need=>"1. 一句话理解\n「"+need+"」本质上就是：把一个复杂问题，转化成你更容易处理的形式。\n\n2. 生活化类比\n想象你在整理一箱乱衣服：不会一次全塞好，而是先按类别分开，再一叠叠放整齐。理解概念也是这样——先拆分，再逐个击破。\n\n3. 三个关键点\n- 先看整体：它要解决什么问题？\n- 再看结构：它由哪几部分组成？\n- 最后看联系：各部分之间怎么配合？\n\n4. 小例子\n以日常场景套用上面的三步，你会发现原本抽象的说法一下就具体了。\n\n5. 自测题\nQ1：这个概念主要解决什么问题？（答案：把复杂问题变简单）\nQ2：按哪三个步骤理解它？（答案：整体 → 结构 → 联系）\n\n先自己想一想再看答案，印象会更深。"
+  }
+};
+
+const FIELDS = [
+  {key:"role", label:"角色设定", tip:"你是谁"},
+  {key:"task", label:"任务指令", tip:"要做什么"},
+  {key:"context", label:"背景上下文", tip:"补充信息"},
+  {key:"format", label:"输出格式", tip:"怎么输出"},
+  {key:"example", label:"参考示例", tip:"给个样板"},
+  {key:"constraints", label:"约束条件", tip:"边界与禁忌"}
+];
+
+const PROVIDERS = {
+  deepseek:{base:"https://api.deepseek.com/v1", model:"deepseek-chat"},
+  qwen:{base:"https://dashscope.aliyuncs.com/compatible-mode/v1", model:"qwen-plus"},
+  kimi:{base:"https://api.moonshot.cn/v1", model:"moonshot-v1-8k"},
+  openai:{base:"https://api.openai.com/v1", model:"gpt-4o-mini"},
+  custom:{base:"", model:""}
+};
+const CFG_KEY = "prompt_workshop_cfg_v1";
+
+let currentScene = "general";
+let mode = "demo";
+let built = false;
+
+const $ = id => document.getElementById(id);
+const els = {};
+FIELDS.forEach(f=>{ els[f.key] = null; });
+
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+function renderScenes(){
+  const box = $("scenes");
+  box.innerHTML = "";
+  Object.keys(SCENES).forEach(k=>{
+    const b = document.createElement("button");
+    b.className = "chip" + (k===currentScene ? " on":"");
+    b.textContent = SCENES[k].label;
+    b.type = "button";
+    b.onclick = ()=>{
+      currentScene = k;
+      renderScenes();
+      buildPrompt();
+    };
+    box.appendChild(b);
+  });
+}
+
+function renderFields(){
+  const box = $("eltList");
+  box.innerHTML = "";
+  FIELDS.forEach(f=>{
+    const item = document.createElement("div");
+    item.className = "elt-item";
+    const head = document.createElement("div");
+    head.className = "elt-head";
+    head.innerHTML = '<span class="dot"></span><span></span><span style="margin-left:auto;color:#9aa2b1;font-weight:400"></span>';
+    head.children[1].textContent = f.label;
+    head.children[2].textContent = f.tip;
+    const ta = document.createElement("textarea");
+    ta.id = "f_" + f.key;
+    ta.spellcheck = false;
+    ta.addEventListener("input", updateAssembled);
+    item.appendChild(head);
+    item.appendChild(ta);
+    box.appendChild(item);
+    els[f.key] = ta;
+  });
+}
+
+function getNeed(){
+  return $("need").value.trim();
+}
+
+function buildPrompt(){
+  const need = getNeed();
+  if(!need){
+    toast("请先写下你的需求");
+    $("need").focus();
+    return false;
+  }
+  const s = SCENES[currentScene];
+  els.role.value = s.role;
+  els.task.value = "请完成以下任务：" + need;
+  els.context.value = s.context;
+  els.format.value = s.format;
+  els.example.value = s.example;
+  els.constraints.value = s.constraints;
+  updateAssembled();
+  built = true;
+  $("compareHint").textContent = "提示词已生成，点击左侧按钮开始对比";
+  toast("已按「" + s.label + "」场景生成六要素提示词");
+  return true;
+}
+
+function assembleText(){
+  const parts = FIELDS.map(f=>{
+    const name = {role:"角色",task:"任务",context:"背景",format:"输出格式",example:"参考示例",constraints:"约束条件"}[f.key];
+    return "【" + name + "】\n" + (els[f.key] ? els[f.key].value.trim() : "");
+  });
+  return parts.join("\n\n");
+}
+
+function updateAssembled(){
+  $("assembled").value = assembleText();
+}
+
+function loadCfg(){
+  try{
+    const raw = localStorage.getItem(CFG_KEY);
+    return raw ? Object.assign({}, PROVIDERS.deepseek, JSON.parse(raw)) : Object.assign({}, PROVIDERS.deepseek);
+  }catch(e){ return Object.assign({}, PROVIDERS.deepseek); }
+}
+function saveCfg(cfg){
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+}
+
+function openSetting(){
+  const c = loadCfg();
+  $("cfgProvider").value = c.provider || "deepseek";
+  $("cfgBase").value = c.base || "";
+  $("cfgKey").value = c.key || "";
+  $("cfgModel").value = c.model || "";
+  $("modalBg").classList.add("show");
+}
+function closeSetting(){ $("modalBg").classList.remove("show"); }
+
+function setMode(m){
+  mode = m;
+  $("tabDemo").classList.toggle("on", m==="demo");
+  $("tabApi").classList.toggle("on", m==="api");
+  $("tabDemo").setAttribute("aria-selected", m==="demo");
+  $("tabApi").setAttribute("aria-selected", m==="api");
+  const st = $("status");
+  if(m==="demo"){
+    st.className = "status";
+    st.innerHTML = "当前为<b>演示模式</b>：使用内置规则引擎生成结构化提示词并模拟两种回答，无需 API Key 即可完整演示。切换到「真实 API」可调用大模型。";
+  }else{
+    const c = loadCfg();
+    if(!c.key){
+      st.className = "status warn";
+      st.innerHTML = "当前为<b>真实 API 模式</b>，但尚未配置密钥。请先点右上角「设置」填写 API Key；或切回演示模式。";
+    }else{
+      st.className = "status api";
+      st.innerHTML = "当前为<b>真实 API 模式</b>：将使用 " + escapeHtml(c.model||"默认模型") + " 分别回答原始提示词与优化后提示词。";
+    }
+  }
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+function renderAnswer(text){
+  let h = escapeHtml(text);
+  h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  h = h.replace(/\n/g, "<br>");
+  return h;
+}
+
+async function callAPI(messages){
+  const c = loadCfg();
+  if(!c.key) throw new Error("未配置 API Key");
+  const url = (c.base||"").replace(/\/$/,"") + "/chat/completions";
+  const resp = await fetch(url,{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer " + c.key},
+    body:JSON.stringify({model:c.model, messages:messages, temperature:0.7})
+  });
+  const text = await resp.text();
+  let data;
+  try{ data = JSON.parse(text); }catch(e){ throw new Error("接口返回非 JSON：" + text.slice(0,160)); }
+  if(!resp.ok) throw new Error("HTTP " + resp.status + "：" + (data.error && data.error.message ? data.error.message : text.slice(0,160)));
+  if(!data.choices || !data.choices[0]) throw new Error("接口返回格式异常");
+  return data.choices[0].message.content;
+}
+
+async function runCompare(){
+  if(!built){
+    if(!buildPrompt()) return;
+  }
+  const need = getNeed();
+  const prompt = assembleText();
+  const s = SCENES[currentScene];
+  const rawBox = $("rawAns"), goodBox = $("goodAns");
+  rawBox.innerHTML = '<span class="spin"></span>模型正在思考…';
+  goodBox.innerHTML = '<span class="spin"></span>模型正在思考…';
+  $("btnCompare").disabled = true;
+  $("compareHint").textContent = "正在生成两份回答，请稍候…";
+
+  try{
+    if(mode === "demo"){
+      await new Promise(r=>setTimeout(r, 700));
+      const raw = s.raw(need);
+      const good = s.good(need);
+      await typeIn(rawBox, raw);
+      await typeIn(goodBox, good);
+    }else{
+      const c = loadCfg();
+      if(!c.key){
+        throw new Error("请先在右上角「设置」中配置 API Key，或切换到演示模式");
+      }
+      const [a,b] = await Promise.all([
+        callAPI([{role:"user",content:need}]),
+        callAPI([{role:"system",content:prompt},{role:"user",content:need}])
+      ]);
+      rawBox.innerHTML = renderAnswer(a);
+      goodBox.innerHTML = renderAnswer(b);
+    }
+    $("compareHint").textContent = "对比完成：右侧回答通常更有结构、更具体";
+  }catch(err){
+    rawBox.innerHTML = '<div class="empty">生成失败：' + escapeHtml(err.message) + '</div>';
+    goodBox.innerHTML = '<div class="empty">生成失败：' + escapeHtml(err.message) + '</div>';
+    $("compareHint").textContent = "生成失败，请检查设置后重试";
+    toast("生成失败：" + err.message);
+  }finally{
+    $("btnCompare").disabled = false;
+  }
+}
+
+function typeIn(box, text){
+  return new Promise(resolve=>{
+    const lines = text.split("\n");
+    let i = 0;
+    box.innerHTML = "";
+    const timer = setInterval(()=>{
+      if(i >= lines.length){
+        clearInterval(timer);
+        resolve();
+        return;
+      }
+      box.innerHTML += (i ? "<br>" : "") + renderAnswer(lines[i]);
+      i++;
+    }, 45);
+  });
+}
+
+async function copyText(){
+  const text = $("assembled").value;
+  if(!text){ toast("还没有可复制的提示词"); return; }
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    const ta = $("assembled");
+    ta.removeAttribute("readonly");
+    ta.select();
+    document.execCommand("copy");
+    ta.setAttribute("readonly","");
+  }
+  toast("提示词已复制到剪贴板");
+}
+
+function init(){
+  renderScenes();
+  renderFields();
+  $("need").value = "帮我写一个能统计每天步数、并生成每周运动周报的功能，要能分享给朋友看。";
+  setMode("demo");
+  buildPrompt();
+
+  $("btnBuild").onclick = buildPrompt;
+  $("btnCopy").onclick = copyText;
+  $("btnCompare").onclick = runCompare;
+  $("btnExample").onclick = ()=>{
+    $("need").value = "帮我写一个能统计每天步数、并生成每周运动周报的功能，要能分享给朋友看。";
+    currentScene = "coding";
+    renderScenes();
+    buildPrompt();
+  };
+  $("tabDemo").onclick = ()=>setMode("demo");
+  $("tabApi").onclick = ()=>setMode("api");
+  $("btnSetting").onclick = openSetting;
+  $("btnCancelCfg").onclick = closeSetting;
+  $("modalBg").onclick = e=>{ if(e.target === $("modalBg")) closeSetting(); };
+  $("cfgProvider").onchange = e=>{
+    const p = PROVIDERS[e.target.value];
+    if(p){ $("cfgBase").value = p.base; $("cfgModel").value = p.model; }
+  };
+  $("btnSaveCfg").onclick = ()=>{
+    const cfg = {
+      provider:$("cfgProvider").value,
+      base:$("cfgBase").value.trim(),
+      key:$("cfgKey").value.trim(),
+      model:$("cfgModel").value.trim()
+    };
+    if(!cfg.base){ toast("请填写接口地址 Base URL"); return; }
+    if(!cfg.key){ toast("请填写 API Key"); return; }
+    saveCfg(cfg);
+    closeSetting();
+    setMode("api");
+    toast("设置已保存到本机浏览器");
+  };
+}
+
+init();
+</script>
+</body>
+</html>
