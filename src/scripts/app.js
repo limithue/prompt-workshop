@@ -17,7 +17,13 @@ const SCENES = {
     example:"输入：写一个判断闰年的函数\n输出：需求拆解 → 思路（整除规则） → 代码（isLeapYear） → 测试（1900/2000/2024）",
     constraints:"代码需附必要注释；说明运行环境与依赖；不要使用已废弃的 API；不确定时明确说明假设。",
     raw:need=>"这个需求直接写代码就好了。你用 Python 或者 Java 都行，网上例子很多的，复制过来改一改就能跑。写完记得测试一下，有问题再调试。大概就是这样。",
-    good:need=>"1. 需求拆解\n目标是实现「"+need+"」。核心包括：输入处理、主逻辑、结果输出三部分。\n\n2. 技术思路\n采用分层写法，主逻辑与界面分离，便于单独测试和后续扩展。优先使用标准库，减少外部依赖。\n\n3. 关键代码\n```python\ndef main(task):\n    # 参数校验\n    if not task:\n        raise ValueError(\"输入不能为空\")\n    # 核心处理\n    result = handle(task)\n    return result\n```\n\n4. 边界情况与测试建议\n- 空输入、异常格式要有兜底；\n- 正常值、边界值各测一组；\n- 建议写成单元函数，方便复用与自动测试。"
+    good:need=>{
+      const goals = splitGoals(need);
+      return "1. 需求拆解\n目标：" + need + "\n可拆成 " + goals.length + " 个子目标：\n" + goalLines(need) +
+        "\n\n2. 技术思路\n每个子目标各自独立成函数，主流程只负责编排与汇总；数据存取走标准库，避免额外依赖。\n\n3. 关键代码\n```python\n" +
+        demoCode(need, goals) +
+        "\n```\n\n4. 边界情况与测试建议\n" + demoEdgeCases(need);
+    }
   },
   writing:{
     label:"文案写作",
@@ -57,7 +63,11 @@ const SCENES = {
     example:"输入：做一个校园二手交易平台\n输出：定位 → 用户痛点 → 功能清单 → 指标 → 风险建议",
     constraints:"聚焦核心场景，不堆砌功能；优先级用 P0/P1/P2 标注；每个结论给出理由。",
     raw:need=>"做个"+need+"呗，现在大家都做这个，应该挺有市场的。你看着加些功能，最好功能多一点，界面好看点，能上线就行。",
-    good:need=>"1. 一句话定位\n「"+need+"」是一个帮助目标用户解决核心痛点的产品，价值主张清晰可验证。\n\n2. 目标用户与核心痛点\n- 目标用户：有明确高频需求的人群；\n- 核心痛点：现有方案效率低、成本高或体验差。\n\n3. 核心功能清单\n- P0：最小可用闭环（能跑通主流程）；\n- P1：体验优化（降低使用门槛）；\n- P2：增值功能（留存与增长）。\n\n4. 关键指标\n- 北极星指标 + 转化率 + 留存率，先定一个主指标。\n\n5. 风险与建议\n先做小范围验证再铺开，避免过度设计；建议先出一版 MVP 收集真实反馈。"
+    good:need=>{
+      const goals = splitGoals(need);
+      const funcs = goals.map((g, i)=>"- " + (i < 2 ? "P0" : "P1") + "：" + g).join("\n");
+      return "1. 一句话定位\n「" + need + "」面向有明确场景需求的用户，先用最小闭环验证价值，再谈扩展。\n\n2. 目标用户与核心痛点\n- 目标用户：愿意为解决这件事花时间的人；\n- 核心痛点：现有做法步骤多、反馈慢、结果不可复用。\n\n3. 核心功能清单\n" + funcs + "\n\n4. 关键指标\n- 主指标（北极星）：核心动作是否被完成；\n- 辅助指标：完成率、次日留存、单次耗时。\n\n5. 风险与建议\n先用两周小范围验证收集真实反馈，再决定是否追加功能，避免一开始就堆 P2。";
+    }
   },
   translate:{
     label:"中英翻译",
@@ -70,6 +80,77 @@ const SCENES = {
     good:need=>"请将以下内容译成地道英文：\n「"+need+"」\n\n要求：\n1) 译文准确、自然，避免机翻腔，保留原文语气与风格；\n2) 提供关键术语的中英对照表；\n3) 简要说明你在翻译中处理的难点（如文化差异、专有名词）。\n\n请先给出译文，再给术语对照，最后说明。"
   }
 };
+
+// —— 演示模式辅助：把需求拆成子目标，并生成与需求相关的示例代码 ——
+
+// 按「并 / 、 / ， / 和 / 且」等连接词把需求切成子目标，避免所有需求得到同一段回答
+function splitGoals(need){
+  const cleaned = String(need || "").replace(/[。？！?!]/g, "").trim();
+  const parts = cleaned.split(/并|、|，|,|；|;|和|且|然后/)
+    .map(s=>s.trim())
+    .filter(s=>s.length >= 2);
+  return parts.length >= 2 ? parts.slice(0, 5) : [cleaned];
+}
+
+function goalLines(need){
+  return splitGoals(need).map((g, i)=>"- 子目标 " + (i + 1) + "：" + g).join("\n");
+}
+
+// 按需求关键词给出真正可运行的示例代码；没命中关键词时，把子目标写进 TODO 骨架
+function demoCode(need, goals){
+  if(/步数|计步|运动|周报|健康/.test(need)){
+    return [
+      "from collections import defaultdict",
+      "from datetime import date",
+      "",
+      "def weekly_report(records):",
+      '    """records: [{"date": "2026-11-20", "steps": 8300}, ...]"""',
+      "    by_week = defaultdict(int)",
+      "    for r in records:",
+      '        y, w, _ = date.fromisoformat(r["date"]).isocalendar()',
+      '        by_week[(y, w)] += r["steps"]',
+      '    return [{"week": f"{y}-W{w}", "total": t} for (y, w), t in sorted(by_week.items())]',
+      "",
+      'if __name__ == "__main__":',
+      '    demo = [{"date": "2026-11-16", "steps": 7200}, {"date": "2026-11-17", "steps": 9300}]',
+      "    print(weekly_report(demo))"
+    ].join("\n");
+  }
+  if(/质数|素数/.test(need)){
+    return [
+      "def is_prime(n):",
+      "    if n < 2:",
+      "        return False",
+      "    if n % 2 == 0:",
+      "        return n == 2",
+      "    i = 3",
+      "    while i * i <= n:",
+      "        if n % i == 0:",
+      "            return False",
+      "        i += 2",
+      "    return True"
+    ].join("\n");
+  }
+  const todos = goals.map((g, i)=>"    # 步骤 " + (i + 1) + "：" + g).join("\n");
+  return [
+    "def solve(payload):",
+    '    """按需求依次完成下面几步，返回汇总结果。"""',
+    todos,
+    "    result = {}",
+    "    return result"
+  ].join("\n");
+}
+
+// 边界与测试建议：跟着需求走，避免「质数函数」也提示跨周跨年
+function demoEdgeCases(need){
+  if(/质数|素数/.test(need)){
+    return "- 0、1、2 与负数边界要先处理；\n- 偶数可快速返回，大数只试到平方根；\n- 建议对 2、3、17、99、1000003 各测一次。";
+  }
+  if(/步数|计步|运动|周报|健康/.test(need)){
+    return "- 空记录、字段缺失要有兜底；\n- 单日、跨周、跨年三种情况各测一组；\n- 建议对 0 步与异常大值各测一次。";
+  }
+  return "- 空输入、字段缺失要有兜底；\n- 正常值与边界值各测一组；\n- 每个子目标单独写单元测试，出问题能直接定位。";
+}
 
 const FIELDS = [
   {key:"role", label:"角色设定", tip:"你是谁"},
@@ -111,17 +192,14 @@ const QUALITY_DIMS = [
   {key:"constraints", name:"约束条件", weight:10}
 ];
 
-// 对比评分维度
-const CMP_DIMS = [
-  {name:"结构完整度", raw:30, good:95},
-  {name:"具体可执行", raw:35, good:92},
-  {name:"信息充分度", raw:40, good:90},
-  {name:"结果可用性", raw:38, good:94}
-];
+// 对比评分维度：按回答文本的真实特征计算，不使用固定分数
+const CMP_DIMS = ["结构完整度", "具体可执行", "信息充分度", "结果可用性"];
 
 let currentScene = "general";
 let mode = "demo";
 let built = false;
+// 上一次对比的原文回答，用于按真实文本打分
+let lastRun = {raw:"", good:""};
 
 const $ = id => document.getElementById(id);
 const els = {};
@@ -238,10 +316,35 @@ function renderQuality(){
   $("qualityTotal").textContent = total;
 }
 
+// 按回答文本本身打分：结构、具体性、信息量、可用性，四项各 0-100，综合分取四项均值
+function scoreAnswer(text){
+  const body = String(text || "");
+  const lines = body.split("\n").filter(l=>l.trim());
+  const len = body.length;
+  const pointLines = lines.filter(l=>/^\s*(\d+[.)、]|[-*]\s|Q\d|【)/.test(l)).length;
+  const bullets = (body.match(/^\s*[-*]\s/gm) || []).length;
+  const hasCode = /```/.test(body);
+  const hasHead = /【|##|\d+\)/.test(body);
+  const numberCount = (body.match(/\d+/g) || []).length;
+  const verbCount = (body.match(/先|再|然后|建议|执行|运行|测试|检查|配置|输出|安装|导入/g) || []).length;
+
+  const structure = Math.min(100, Math.round(pointLines * 11 + (hasHead ? 25 : 0) + (hasCode ? 20 : 0)));
+  const concrete = Math.min(100, Math.round((hasCode ? 45 : 0) + Math.min(30, numberCount * 4) + Math.min(25, verbCount * 5)));
+  const info = Math.min(100, Math.round(len / 3.2));
+  const usable = Math.min(100, Math.round(pointLines * 9 + bullets * 3 + (hasCode ? 25 : 0) + Math.min(25, Math.round(len / 18))));
+
+  return [
+    {name:CMP_DIMS[0], score:structure},
+    {name:CMP_DIMS[1], score:concrete},
+    {name:CMP_DIMS[2], score:info},
+    {name:CMP_DIMS[3], score:usable}
+  ];
+}
+
 function computeCmpScores(){
   return {
-    raw: CMP_DIMS.map(d=>({name:d.name, score:d.raw})),
-    good: CMP_DIMS.map(d=>({name:d.name, score:d.good}))
+    raw: scoreAnswer(lastRun.raw),
+    good: scoreAnswer(lastRun.good)
   };
 }
 
@@ -268,7 +371,8 @@ function fillScorePanel(itemsId, totalId, dims){
       '<span class="s-name">'+d.name+'</span><span class="s-bar"><span class="s-fill" style="width:'+d.score+'%"></span></span><span class="s-val">'+d.score+'</span>';
     box.appendChild(item);
   });
-  $(totalId).textContent = total;
+  // 四项各 100 分，综合分取平均，保证与界面上的「/ 100」一致
+  $(totalId).textContent = dims.length ? Math.round(total / dims.length) : 0;
 }
 
 function renderDiffHl(){
@@ -277,9 +381,10 @@ function renderDiffHl(){
   hl.style.display = built ? "" : "none";
   if(!built) return;
   const s = SCENES[currentScene];
-  const rawLen = s.raw(getNeed()).length;
-  const goodLen = s.good(getNeed()).length;
-  hl.innerHTML = "<b>差异一目了然：</b>原始问法只有 " + rawLen + " 字、结构松散；优化后提示词达到 " + goodLen + " 字，且按六要素组织，模型能给出更具体、更结构化的回答。这就是提示词工程的直接价值。";
+  const rawLen = lastRun.raw.length;
+  const goodLen = lastRun.good.length;
+  hl.innerHTML = "<b>差异一目了然：</b>原始问法的回答 " + rawLen + " 字、结构松散；优化后提示词的回答 " + goodLen +
+    " 字，且按六要素组织。这就是提示词工程的直接价值。<br><span class=\"hl-note\">说明：演示模式的回答由本地模板生成（已按当前需求拆解子目标），用于呈现结构差异；真实模型效果请切换到「真实 API」。</span>";
 }
 
 function getResultText(){
@@ -411,6 +516,7 @@ async function runCompare(){
       await new Promise(r=>setTimeout(r, 700));
       const raw = s.raw(need);
       const good = s.good(need);
+      lastRun = {raw: raw, good: good};
       await typeIn(rawBox, raw);
       await typeIn(goodBox, good);
     }else{
@@ -422,6 +528,7 @@ async function runCompare(){
         callAPI([{role:"user",content:need}]),
         callAPI([{role:"system",content:prompt},{role:"user",content:need}])
       ]);
+      lastRun = {raw: a, good: b};
       rawBox.innerHTML = renderAnswer(a);
       goodBox.innerHTML = renderAnswer(b);
     }

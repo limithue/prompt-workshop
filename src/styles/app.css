@@ -162,4 +162,7 @@
 
   footer{text-align:center;color:#9aa2b1;font-size:11.5px;margin-top:34px}
 
+  /* 差异说明里的小字备注 */
+  .hl-note{display:block;margin-top:7px;font-size:11.5px;color:#8b93a1;line-height:1.65}
+
   @media(max-width:960px){.grid{grid-template-columns:1fr}.cmp-grid{grid-template-columns:1fr}.cmp-score{grid-template-columns:1fr}}
