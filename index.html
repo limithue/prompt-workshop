@@ -18,7 +18,7 @@
       <button id="tabDemo" class="on" role="tab" aria-selected="true">演示模式</button>
       <button id="tabApi" role="tab" aria-selected="false">真实 API</button>
     </div>
-    <button class="btn" id="btnSetting" title="API 设置">
+    <button class="btn header-btn" id="btnSetting" title="API 设置">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21h-4v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3v-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1H21v4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
       设置
     </button>
@@ -44,7 +44,10 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 3 14 9-14 9V3Z"/></svg>
           生成结构化提示词
         </button>
-        <button class="example-link" id="btnExample">填入示例需求</button>
+        <button class="btn" id="btnExample">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v6h6M20 20v-6h-6M20 4 14 10M4 20l6-6"/></svg>
+          随机示例
+        </button>
       </div>
       <p class="hint" style="margin-top:12px">小技巧：先点「填入示例需求」体验完整流程，再换成你自己的需求。</p>
     </section>
@@ -62,6 +65,12 @@
             复制提示词
           </button>
         </div>
+      </div>
+
+      <div class="quality" id="qualityBox" style="display:none">
+        <div class="q-head"><span class="dot"></span>提示词质量自检（六要素完整度）</div>
+        <div id="qualityItems"></div>
+        <div class="q-total">综合得分 <b id="qualityTotal">0</b> / 100</div>
       </div>
     </section>
   </div>
@@ -85,6 +94,32 @@
         <div class="ans-head">优化后提示词（六要素）<span class="tag">结构化输入</span></div>
         <div class="ans-body" id="goodAns"><div class="empty">等待生成…</div></div>
       </div>
+    </div>
+
+    <div class="cmp-score" id="cmpScore" style="display:none">
+      <div class="score-panel raw-panel">
+        <h4>原始问法质量</h4>
+        <div id="rawScoreItems"></div>
+        <div class="s-total">得分 <b id="rawScoreTotal">0</b> / 100</div>
+      </div>
+      <div class="score-panel good-panel">
+        <h4>优化后提示词质量</h4>
+        <div id="goodScoreItems"></div>
+        <div class="s-total">得分 <b id="goodScoreTotal">0</b> / 100</div>
+      </div>
+    </div>
+
+    <div class="hl" id="diffHl" style="display:none"></div>
+
+    <div class="export-row" id="exportRow" style="display:none">
+      <button class="btn" id="btnExportMd">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        导出对比结果（Markdown）
+      </button>
+      <button class="btn" id="btnCopyResult">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        复制结果文本
+      </button>
     </div>
   </section>
 
